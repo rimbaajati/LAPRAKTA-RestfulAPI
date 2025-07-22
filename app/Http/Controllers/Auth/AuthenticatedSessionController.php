@@ -28,8 +28,24 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Cek role dan redirect sesuai
+        $role = $request->input('role');
+
+        if (auth()->user()->role !== $role) {
+            auth()->logout();
+            return redirect()->back()->withErrors([
+                'email' => 'Role tidak sesuai dengan akun.',
+            ]);
+        }
+
+        // Redirect sesuai role
+        if ($role === 'admin') {
+            return redirect()->intended('/admin/panel');
+        }
+
+        return redirect()->intended(RouteServiceProvider::HOME);
     }
+
 
     /**
      * Destroy an authenticated session.
