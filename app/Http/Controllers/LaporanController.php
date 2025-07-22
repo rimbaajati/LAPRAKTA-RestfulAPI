@@ -13,6 +13,11 @@ class LaporanController extends Controller
         return Laporan::all();
     }
 
+    public function create()
+    {
+        return view('laporan.create');
+    }
+
     public function store(Request $request)
     {
         // Validasi input
@@ -23,20 +28,23 @@ class LaporanController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        // Jika validasi gagal
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            } else {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
         }
 
         // Upload foto jika ada
         $foto = null;
         if ($request->hasFile('foto')) {
             $foto = $request->file('foto')->store('public/laporan_foto');
-            $foto = basename($foto); // hanya ambil nama filenya
+            $foto = basename($foto); // ambil nama file saja
         }
 
         // Simpan data laporan
@@ -48,13 +56,17 @@ class LaporanController extends Controller
             'foto' => $foto,
         ]);
 
-        // Berikan response sukses
-        return response()->json([
-            'success' => true,
-            'message' => 'Laporan berhasil dikirim!',
-            'data' => $laporan
-        ], 201);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan berhasil dikirim!',
+                'data' => $laporan
+            ], 201);
+        } else {
+            return redirect()->route('laporan.create')->with('success', 'Laporan berhasil dikirim!');
+        }
     }
+
 
     public function show($id)
     {
